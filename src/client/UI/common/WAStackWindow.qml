@@ -85,15 +85,17 @@ Window {
 	    onSetBackground: {
 		    var result = backgroundimg.replace("file://","")
 		    myBackgroundImage = result
+		    backgroundImage.source = myBackgroundImage!="none" ? (WAConstants.CACHE_PATH+"/"+"background"+(screen.currentOrientation==Screen.Portrait?"-portrait":"-landscape")+".jpg" + "?ran=" + Math.random()) : ""
 	    }
     }
 
     Image {
         id: backgroundImage
-        source: myBackgroundImage!="none" ? myBackgroundImage : ""
+        anchors.fill: parent
+        source: myBackgroundImage!="none" ? (WAConstants.CACHE_PATH+"/"+"background"+(screen.currentOrientation==Screen.Portrait?"-portrait":"-landscape")+".jpg" + "?ran=" + Math.random()) : ""
         fillMode: Image.PreserveAspectCrop
         opacity: parseInt(myBackgroundOpacity) / 10.0
-        anchors { top: statusBar.bottom; left: parent.left; bottom: parent.bottom; right: parent.right; }
+        clip: true
     }
 
     Item {

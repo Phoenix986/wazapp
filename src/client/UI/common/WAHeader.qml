@@ -34,7 +34,7 @@ Rectangle{
 
         var d = new Date()
 
-        if(d.getMonth() == 11 && d.getDate() > 17) {
+        if((d.getMonth() == 11 && d.getDate() > 17) || (d.getMonth() == 0 && d.getDate() < 14)) {
             wazapp_icon.source = 'images/icons/wazanta80.png'
         }
     }

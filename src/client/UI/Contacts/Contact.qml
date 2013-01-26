@@ -36,7 +36,7 @@ Item{
     property string contactStatus;
     property string contactNumber;
 	//property bool isVisible
-	//property bool isNew: false
+    property bool isNew: false
 
     signal clicked();
 	signal optionsRequested()
@@ -93,9 +93,21 @@ Item{
     MouseArea{
         id:mouseArea
         anchors.fill: parent
-		onPressAndHold: container.optionsRequested()
+		onPressAndHold: {
+			container.optionsRequested()
+			if (isNew) {
+				isNew= false
+				newContacts = newContacts -1
+			}
+		}
+
         onClicked:{
+            if (isNew) {
+		    isNew= false
+		    newContacts = newContacts -1
+	    }
             consoleDebug("CLICKED");
+
 			consoleDebug("OPENING CONTACT FOR CONVERSATION: " + jid)
 
             /*if(ContactHelper.conversation){
@@ -143,7 +155,7 @@ Item{
 				elide: Text.ElideRight
 				width: parent.width -16
 				font.bold: true
-				//color: isNew? "green" : (theme.inverted? "white":"black")
+				color: isNew? "#27a01b" : (theme.inverted? "white":"black")
 			}
 			Label {
 				id:contact_status

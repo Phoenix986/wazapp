@@ -110,6 +110,36 @@ WAPage {
 
         return 0
     }
+    
+    Item { id: dummy }
+
+    function hideSearchBar() {
+        searchbar.height = 0
+        searchInput.enabled = false
+        sbutton.enabled = false
+        searchInput.text = ""
+        searchInput.platformCloseSoftwareInputPanel()
+	searchInput.enabled = false
+        timer.stop()
+    }
+    
+    Timer {
+        id: timer
+        interval: 5000
+        onTriggered: {
+            if (searchInput.text==="") hideSearchBar()
+        }
+    }
+
+    function showSearchBar() {
+        searchbar.height = 71
+        searchInput.enabled = true
+        sbutton.enabled = true
+        searchInput.text = ""
+        searchInput.enabled = true
+        dummy.focus = true
+        timer.start()
+    }
 
     //ListModel{id:conversationsModel}
 
@@ -118,12 +148,13 @@ WAPage {
         id:chatsDelegate;
 
         Chat{
-			id: chatsDelegateItem
-			
-			Component.onCompleted: {
+	    id: chatsDelegateItem
+	    property bool filtered: Helpers.getCode(title)[0].match(new RegExp(searchInput.text,"i")) != null
+	    Component.onCompleted: {
                 setConversation(model.conversation);
             }
-
+	    height: filtered ? 102 : 0
+	    visible: height!=0
             width:chatsContainer.width
             onOptionsRequested: {
                 chatMenu.jid = getConversation().jid;
@@ -163,6 +194,67 @@ WAPage {
         WANotify{
             id:wa_notifier
         }
+        
+        Rectangle {
+		id: searchbar
+		width: parent.width
+		height: 0
+		anchors.top: parent.top
+		anchors.topMargin: wa_notifier.height
+		color: "transparent"
+		clip: true
+
+		Rectangle {
+
+			id: srect
+			anchors.fill: searchbar
+			anchors.leftMargin: 12
+			anchors.rightMargin: 12
+			anchors.top: searchbar.top
+			anchors.topMargin: searchbar.height - 62
+			anchors.bottomMargin: 2
+			color: "transparent"
+            opacity: searchbar.height==0 ? 0 : 1
+
+            Behavior on opacity { NumberAnimation { duration: 400 } }
+
+			TextField {
+			    id: searchInput
+			    inputMethodHints: Qt.ImhNoPredictiveText
+			    placeholderText: qsTr("Quick search")
+			    anchors.top: srect.top
+			    anchors.left: srect.left
+			    width: parent.width
+			    enabled: false
+			    onTextChanged: timer.restart()
+			}
+
+			Image {
+			    id: sbutton
+			    smooth: true
+			    anchors.top: srect.top
+			    anchors.topMargin: 1
+			    anchors.right: srect.right
+			    anchors.rightMargin: 4
+			    height: 52
+			    width: 52
+			    enabled: false
+			    source: searchInput.text==="" ? "image://theme/icon-m-common-search" : "image://theme/icon-m-input-clear"
+			    MouseArea {
+			        anchors.fill: parent
+			        onClicked: {
+			            searchInput.text = ""
+			            searchInput.forceActiveFocus()
+			        }
+			    }
+			}
+
+		}
+
+        Behavior on height { NumberAnimation { duration: 200 } }
+
+	}
+        
         Item{
             width:parent.width
             height:parent.height-wa_notifier.height
@@ -189,6 +281,14 @@ WAPage {
             clip:true
             cacheBuffer: 10000
 			//onCountChanged: chatsList.positionViewAtBeginning()
+			
+	    onContentYChanged:  {
+                if ( chatsList.visibleArea.yPosition < 0)
+                {
+                    if ( searchbar.height==0 )
+                        showSearchBar()
+                }
+            }
         }
     }
 

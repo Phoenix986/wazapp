@@ -23,10 +23,15 @@ Item {
     property int bubbleColor:1
     property string thumb
     property variant media
+    property string media_path
     property variant author
     property int progress: 0
 
     signal optionsRequested()
+    signal nameClicked()
+    signal nameHolded()
+    signal clickOutside()
+    signal holdOutside()
 
     anchors.right: from_me==1?this.right:parent.right
     anchors.left: from_me!=1?this.left:parent.left
@@ -101,9 +106,11 @@ Item {
            state_status:delegateContainer.state_status
            bubbleColor: delegateContainer.bubbleColor;
 
-           onOptionsRequested: {
-               delegateContainer.optionsRequested()
-           }
+           onOptionsRequested: delegateContainer.optionsRequested()
+           onNameClicked: delegateContainer.nameClicked()
+           onNameHolded: delegateContainer.nameHolded()	   
+           onClickOutside: delegateContainer.clickOutside()
+           onHoldOutside: delegateContainer.holdOutside()
 
   		}
     }
@@ -124,7 +131,7 @@ Item {
 			name: delegateContainer.name
 			state_status:delegateContainer.state_status
 			media: delegateContainer.media
-            localPath: delegateContainer.media.local_path?delegateContainer.media.local_path:""
+            localPath: delegateContainer.media.local_path?delegateContainer.media.local_path:delegateContainer.media_path
 			message: delegateContainer.message
 			bubbleColor:delegateContainer.bubbleColor;
             mediaSize: delegateContainer.media.size?delegateContainer.media.size:0
@@ -144,6 +151,7 @@ Item {
 						consoleDebug("MESSAGE SENT! BUBBLE " + media.id + " - " + filepath)
 						transferState = 2
 						localPath = filepath
+						delegateContainer.media_path = filepath
 						transferState = "success"
 						progress = 0
 					}
@@ -160,23 +168,26 @@ Item {
 
 			}
 
-			onOptionsRequested: {
-		   		delegateContainer.optionsRequested()
-			}
+			onOptionsRequested: delegateContainer.optionsRequested()
+			onNameClicked: delegateContainer.nameClicked()
+			onNameHolded: delegateContainer.nameHolded()
+			onClickOutside: delegateContainer.clickOutside()
+			onHoldOutside: delegateContainer.holdOutside()
 
 			onClicked: {
 		   		if(from_me==0 && transferState!="success")
 		   			return;
 
 		   		var prefix = "";
-
+				var postfix = ""
 	   			switch(delegateContainer.media.mediatype_id) {
-					case 5:prefix = "geo:"; break;
+					case 5:prefix = "geo:"; postfix = "?action=showOnMap"; break;
 					default: prefix = "file://"; break;
 		   		}
 
-				consoleDebug("OPENING: " + prefix + decodeURIComponent(localPath))
-				Qt.openUrlExternally( prefix + decodeURIComponent(localPath) );
+				consoleDebug("OPENING: " + prefix + decodeURIComponent(localPath) + postfix)
+				if (decodeURIComponent(localPath) != "")
+					Qt.openUrlExternally( prefix + decodeURIComponent(localPath) + postfix);
 			}
 
 			onUploadClicked: {

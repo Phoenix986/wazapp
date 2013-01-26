@@ -71,8 +71,7 @@ WAPage {
 
 		onSetBackground: {
 			var result = backgroundimg.replace("file://","")
-			myBackgroundImage = result
-			MySettings.setSetting("Background", result)
+			MySettings.setSetting("Background"+(appWindow.inPortrait?"Portrait":"Landscape"), result)
 			backgroundSelector.subtitle = getBackgroundSubtitle()
 		}
 
@@ -89,10 +88,14 @@ WAPage {
 				personalTone.subtitle = getRingtoneSubtitle(ringtonevalue)
 			}
 		}
+		
+		onOrientationChangeStarted: {
+			setBackground(MySettings.getSetting("Background"+(screen.currentOrientation==Screen.Portrait?"Portrait":"Landscape"), "none"))
+		}
 	}
 
 	function getBackgroundSubtitle() {
-		var res = MySettings.getSetting("Background", "none")
+		var res = MySettings.getSetting("Background"+(appWindow.inPortrait?"Portrait":"Landscape"), "none")
 		res = res.split('/')
 		res = res[res.length-1]
 		res = res.charAt(0).toUpperCase() + res.slice(1);
@@ -153,22 +156,6 @@ WAPage {
         background: ""
 		backgroundDisabled: ""
 		backgroundError: ""
-    }
-
-    ButtonStyle {
-        id: myButtonStyleLeft
-        pressedBackground: "image://theme/color3-meegotouch-button-background-pressed-horizontal-left"
-        checkedBackground: "image://theme/color3-meegotouch-button-background-selected-horizontal-left"
-    }
-    ButtonStyle {
-        id: myButtonStyleCenter
-        pressedBackground: "image://theme/color3-meegotouch-button-background-pressed-horizontal-center"
-        checkedBackground: "image://theme/color3-meegotouch-button-background-selected-horizontal-center"
-    }
-    ButtonStyle {
-        id: myButtonStyleRight
-        pressedBackground: "image://theme/color3-meegotouch-button-background-pressed-horizontal-right"
-        checkedBackground: "image://theme/color3-meegotouch-button-background-selected-horizontal-right"
     }
 
     SliderStyle {
@@ -247,6 +234,18 @@ WAPage {
 							MySettings.setSetting("ResizeImages", value)
 							resizeImages = value=="Yes"
 							setResizeImages(resizeImages)
+						}
+					}
+
+					GroupSeparator {
+						title: qsTr("Message removing")
+					}
+					SwitchItem {
+						title: qsTr("Delete received files")
+						check: removeReceivedMedia
+						onCheckChanged: {
+							MySettings.setSetting("RemoveReceivedMedia", value)
+							removeReceivedMedia = value=="Yes"
 						}
 					}
 
@@ -354,7 +353,7 @@ WAPage {
 						id: backgroundSelector
 					    title: qsTr("Image")
 					    subtitle: getBackgroundSubtitle()
-						onClicked: pageStack.push(Qt.resolvedUrl("SetBackground.qml") );
+						onClicked: pageStack.push(setBackgroundPicture);
 					}
 
 					Row {
@@ -395,28 +394,25 @@ WAPage {
 						height: 30
 					}
 					ButtonRow {
-					    Button {
+					    WAButton {
 					        text: qsTr("Automatic")
 					        checked: orientation==0
-							platformStyle: myButtonStyleLeft
 					        onClicked: {
 								MySettings.setSetting("Orientation", "0")
 					            orientation=0
 					        }
 					    }
-					    Button {
+					    WAButton {
 					        text: qsTr("Portrait")
 					        checked: orientation==1
-							platformStyle: myButtonStyleCenter
 					        onClicked: {
 								MySettings.setSetting("Orientation", "1")
 					            orientation=1
 					        }
 					    }
-					    Button {
+					    WAButton {
 					        text: qsTr("Landscape")
 					        checked: orientation==2
-							platformStyle: myButtonStyleRight
 					        onClicked: {
 								MySettings.setSetting("Orientation", "2")
 					            orientation=2
@@ -431,19 +427,17 @@ WAPage {
 					}
 					ButtonRow {
 					    id: br1
-					    Button {
+					    WAButton {
 					        text: qsTr("White")
 					        checked: theme.inverted ? false : true
-					        platformStyle: myButtonStyleLeft
 					        onClicked: {
 								MySettings.setSetting("ThemeColor", "White")
 					            theme.inverted = false
 					        }
 					    }
-					    Button {
+					    WAButton {
 					        text: qsTr("Black")
 					        checked: theme.inverted ? true : false
-					        platformStyle: myButtonStyleRight
 					        onClicked: {
 								MySettings.setSetting("ThemeColor", "Black")
 					            theme.inverted = true
@@ -456,45 +450,40 @@ WAPage {
 						text: qsTr("Bubble color:")
 						height: 50
 					}
-					ButtonRow {
-					    id: br2
-						height: 70
-					    Button {
-					        text: qsTr("Cyan")
-					        checked: mainBubbleColor==1
-							platformStyle: myButtonStyleLeft
-					        onClicked: {
-								MySettings.setSetting("BubbleColor", "1")
-					            mainBubbleColor=1
-					        }
-					    }
-					    Button {
-					        text: qsTr("Green")
-					        checked: mainBubbleColor==4
-							platformStyle: myButtonStyleCenter
-					        onClicked: {
-								MySettings.setSetting("BubbleColor", "4")
-					            mainBubbleColor=4
-					        }
-					    }
-					    Button {
-					        text: qsTr("Pink")
-					        checked: mainBubbleColor==3
-							platformStyle: myButtonStyleCenter
-					        onClicked: {
-								MySettings.setSetting("BubbleColor", "3")
-					            mainBubbleColor=3
-					        }
-					    }
-					    Button {
-					        text: qsTr("Orange")
-					        checked: mainBubbleColor==2
-							platformStyle: myButtonStyleRight
-					        onClicked: {
-								MySettings.setSetting("BubbleColor", "2")
-					            mainBubbleColor=2
-					        }
-					    }
+
+					GridView {
+						id: gridView
+						width: parent.width
+						cellHeight: 64
+						cellWidth: 64
+						interactive: false
+						property int bubblesCount: 15
+						
+						height: getHeight()
+						
+						function getHeight() {
+						    var itemsRow = appWindow.inPortrait ? 7 : 12
+						    return (parseInt(bubblesCount / itemsRow) + (((bubblesCount % itemsRow) == 0) ? 0 : 1)) * cellHeight
+						}
+						
+						Component.onCompleted: {
+						  for (var i=1; i<bubblesCount+1; i++)
+						    gridModel.append({"name":i});
+						}
+
+						model: ListModel { id: gridModel }
+
+						delegate: BubbleColorButton {
+							selected: model.name==mainBubbleColor
+							imagenum: model.name
+							height: gridView.cellHeight
+							width: gridView.cellWidth
+							onClicked: { 
+								MySettings.setSetting("BubbleColor", model.name)
+								mainBubbleColor = model.name
+							}
+						}
+
 					}
 
 				}
@@ -530,12 +519,27 @@ WAPage {
 					id: column3
 					anchors { top: parent.top; left: parent.left; right: parent.right;}
 					spacing: 10
+					
+					GroupSeparator {
+						title: qsTr("Behaviour")
+					}
+					SwitchItem {
+						title: qsTr("Use system Chat notifier")
+						check: notifierChatBehaviour
+						onCheckChanged: {
+							MySettings.setSetting("NotifierChatBehaviour", value)
+							notifierChatBehaviour = value=="Yes"
+							setNotifierChatBehaviour(notifierChatBehaviour)
+						}
+					}
 
 					GroupSeparator {
 						title: qsTr("Personal messages")
+						visible: !notifierChatBehaviour
 					}
 					SelectionItem {
 						id: personalTone
+						visible: !notifierChatBehaviour
 					    title: qsTr("Notification tone")
 					    subtitle: getRingtoneSubtitle(personalRingtone)
 						onClicked: {
@@ -546,20 +550,23 @@ WAPage {
 					}
 					SwitchItem {
 						title: qsTr("Vibrate")
-						check: MySettings.getSetting("PersonalVibrate", "Yes")=="Yes"
+						visible: !notifierChatBehaviour
+						check: vibraForPersonal
 						onCheckChanged: {
 							MySettings.setSetting("PersonalVibrate", value)
-							vibraForPersonal = value
-							setPersonalVibrate(value)
+							vibraForPersonal = value=="Yes"
+							setPersonalVibrate(vibraForPersonal)
 						}
 					}
 
 					GroupSeparator {
 						title: qsTr("Group messages")
+						visible: !notifierChatBehaviour
 					}
 
 					SelectionItem {
 						id: groupTone
+						visible: !notifierChatBehaviour
 					    title: qsTr("Notification tone")
 					    subtitle: getRingtoneSubtitle(groupRingtone)
 						onClicked: {
@@ -570,12 +577,13 @@ WAPage {
 					}
 					SwitchItem {
 						id: groupVibra
+						visible: !notifierChatBehaviour
 						title: qsTr("Vibrate")
-						check: MySettings.getSetting("GroupVibrate", "Yes")=="Yes"
+						check: vibraForGroup
 						onCheckChanged: {
 							MySettings.setSetting("GroupVibrate", value)
-							vibraForGroup = value
-							setGroupVibrate(value)
+							vibraForGroup = value=="Yes"
+							setGroupVibrate(vibraForGroup)
 						}
 					}
 
@@ -672,9 +680,8 @@ WAPage {
                         text: typeof(myPushName) != "undefined"?myPushName:""
 					}
 
-					Button
+					WAButton
 					{
-						platformStyle: ButtonStyle { inverted: true }
 						width: 160
 						height: 50
                         text: qsTr("Save")
@@ -686,7 +693,7 @@ WAPage {
                                 push_text.text = push_text.pushNameCached
                                 return
                             }
-
+					
                             setMyPushName(push_text.text);
                             showNotification(qsTr("Push name updated"));
                         }
@@ -772,17 +779,52 @@ WAPage {
     SelectPicture {
         id:setProfilePicture
         onSelected: {
-            pageStack.pop()
-
-            runIfOnline(function(){
-                picture.state = "loading"
-                breathe()
-                setMyProfilePicture(path)
-
-            }, true)
-
+	    resizePicture.maximumSize = 480
+	    resizePicture.minimumSize = 192
+	    resizePicture.picture = path
+	    resizePicture.filename = "temp.jpg"
+	    pageStack.replace(resizePicture)
+        }
+    }
+    
+    SelectPicture {
+        id:setBackgroundPicture
+        property int oldOrientation
+        noneButtonActive: true
+        onSelected: {
+	    oldOrientation = orientation
+	    if (appWindow.inPortrait)
+		orientation=1
+	    else
+		orientation=2
+	    resizeBackground.maximumSize = appWindow.inPortrait?480:854
+	    resizeBackground.picture = path
+	    resizeBackground.avatar = false
+	    resizeBackground.filename = "background"+(appWindow.inPortrait?"-portrait":"-landscape")+".jpg"
+	    pageStack.replace(resizeBackground)
         }
     }
 
+    ResizePicture {
+	id: resizePicture
+	onSelected: {	
+		pageStack.pop()
+		
+		runIfOnline(function(){
+			picture.state = "loading"
+			breathe()
+			setMyProfilePicture()
+		}, true)
+	}
+    }
+
+    ResizePicture {
+	id: resizeBackground
+	onSelected: {	
+		pageStack.pop()
+		setBackground(resizeBackground.picture)
+		orientation = setBackgroundPicture.oldOrientation
+	}
+    }
 }
 

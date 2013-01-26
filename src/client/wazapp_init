@@ -29,8 +29,7 @@ if __name__=="__main__":
 		sys.exit();
 	except dbus.exceptions.DBusException as e:
 		print "CAUGHT EXCEPT"
-		os.system("exec /usr/bin/invoker --type=e --splash /opt/waxmppplugin/bin/wazapp/UI/common/images/splash/wasplash.png /opt/waxmppplugin/bin/wazapp/wazapp"); #logging cause incoming messages not receiving
-		#os.system("exec /usr/bin/invoker --type=e --splash /opt/waxmppplugin/bin/wazapp/UI/common/images/splash/wasplash.png /opt/waxmppplugin/bin/wazapp/wazapp > /home/user/walogs 2>&1");
+		os.system("exec /usr/bin/invoker -s -S /opt/waxmppplugin/bin/wazapp/UI/common/images/splash/wasplash.png --type=e /opt/waxmppplugin/bin/wazapp/wazapp > /home/user/.wazapp/walogs 2>&1");
 	
 
 	

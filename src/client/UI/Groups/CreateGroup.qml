@@ -31,7 +31,9 @@ import "../EmojiDialog"
 WAPage {
 
 	id: content
-
+	property int m_rectX
+	property int m_rectY
+	property int m_rectW
 	property string groupId
 	property bool creatingGroup: false
     property int createStage:0;//1 creating //2  adding praticipants //3 setting picture
@@ -146,7 +148,7 @@ WAPage {
                 imgsource: selectedPicture || defaultGroupPicture
             }
 
-            Button {
+            WAButton {
                 id: picButton
                 height: 50
                 width: parent.width - 10 - 80
@@ -231,7 +233,7 @@ WAPage {
             onRemoved: {
                 consoleDebug(index)
                 var rmItem = participantsModel.get(index)
-                genericSyncedContactsSelector.unSelect(rmItem.relativeIndex)
+                genericSyncedContactsSelector.unSelect(rmItem.jid)
 
             }
 
@@ -327,7 +329,7 @@ WAPage {
 
             if(selectedPicture && selectedPicture !== defaultGroupPicture) {
                 createStage = 3;
-                setGroupPicture(groupId, selectedPicture)
+                setGroupPicture(groupId)
             }
 
             openConversation(groupId);
@@ -416,10 +418,30 @@ WAPage {
     SelectPicture {
         id:selectPicturePage
         onSelected: {
-            pageStack.pop()
-            selectedPicture = path
+            breathe()
+            resizePicture.maximumSize = 480
+	    resizePicture.minimumSize = 192
+	    resizePicture.picture = path
+	    resizePicture.filename = "temp.jpg"
+            pageStack.replace(resizePicture)
         }
     }
+
+    ResizePicture {
+	id: resizePicture
+	onSelected: {	
+		pageStack.pop()
+		
+		runIfOnline(function(){
+			breathe()
+			selectedPicture = WAConstants.CACHE_PATH+"/"+"temp.jpg"
+			m_rectX = rectX
+			m_rectY = rectY
+			m_rectW = rectW
+		}, true)
+	}
+    }
+
 
 
 }

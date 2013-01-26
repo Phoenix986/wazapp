@@ -42,6 +42,7 @@ class MessageBase(Model):
 		self.STATUS_DELIVERED = Message.STATUS_DELIVERED
 		self.Media = None
 		self.media_id = None
+		self.pushname = None
 
 		super(MessageBase,self).__init__();
 		

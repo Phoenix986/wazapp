@@ -65,6 +65,7 @@ Rectangle {
     signal removed(int index)
     state: model?"loaded":"loading"
     signal selected(variant selectedItem)
+    signal selectedChanged()
 
     /**********************/
 
@@ -114,13 +115,9 @@ Rectangle {
     }
 
     function resetSelections(){
-
-        var selected = getSelected()
-        for (var i=0; i<selected.length; i++){
-            unSelect(selected[i].selectedIndex)
-        }
-
          WAlvhelper.selectedIndices = new Array()
+         WAlvhelper.items = new Array()
+         walistviewroot.selectedChanged()
     }
 
     function getItems(){
@@ -128,32 +125,37 @@ Rectangle {
     }
 
 
-    function select(ind){
-        if(isSelected())
+    function select(jid){
+        if(isSelected(jid))
             return
 
-        WAlvhelper.selectedIndices.push(ind)
-
-        if(ind < WAlvhelper.items.length)
-            WAlvhelper.items[ind].isSelected = true
-
+        WAlvhelper.selectedIndices.push(jid)
+        //for(var i=0; i<WAlvhelper.items.length; i++) {
+        //    if(WAlvhelper.items[i].modelData.jid == jid) {
+	//	WAlvhelper.items[i].isSelected = true
+	//	break
+	//    }
+	//}
+        walistviewroot.selectedChanged()
     }
 
-    function unSelect(ind){
-
-        var tmpind = WAlvhelper.selectedIndices.indexOf(ind)
+    function unSelect(jid){
+        var tmpind = WAlvhelper.selectedIndices.indexOf(jid)
         if(tmpind >= 0) {
             WAlvhelper.selectedIndices.splice(tmpind,1)
         }
 
-        if(ind < WAlvhelper.items.length) {
-            WAlvhelper.items[ind].isSelected = false
-
-         }
+        //for(var i=0; i<WAlvhelper.items.length; i++) {
+        //    if(WAlvhelper.items[i].modelData.jid == jid) {
+	//	WAlvhelper.items[i].isSelected = false
+	//	break
+	//    }
+	//}
+        walistviewroot.selectedChanged()
     }
 
-    function isSelected(ind){
-        return (WAlvhelper.selectedIndices.indexOf(ind) >= 0)
+    function isSelected(jid){
+        return (WAlvhelper.selectedIndices.indexOf(jid) >= 0)
     }
 
     function getSelected(){
@@ -223,8 +225,18 @@ Rectangle {
             id:item
 
             Component.onCompleted: {
-                    WAlvhelper.items.push(item)
-                    item.isSelected = walistviewroot.isSelected(index);
+		    item.isSelected = walistviewroot.isSelected(jid);
+		    if(WAlvhelper.items.indexOf(item) < 0)
+			WAlvhelper.items.push(item)
+            }
+            
+            Connections {
+                    target: walistviewroot
+                    onSelectedChanged: {
+			item.isSelected = walistviewroot.isSelected(jid);
+			if(WAlvhelper.items.indexOf(item) < 0)
+			    WAlvhelper.items.push(item)
+		    }
             }
 
             property variant modelData: model
@@ -235,7 +247,7 @@ Rectangle {
             property string itemPicture: model.picture || defaultPicture
             property string itemDescription:model.description || ""
 
-            property bool isSelected
+            property bool isSelected: walistviewroot.isSelected(jid)
             property bool isRemoved
             property bool render:!model.norender || model.norender == false;
 
@@ -357,10 +369,10 @@ Rectangle {
                     if(!multiSelectMode)
                         walistviewroot.selected(model)
                     else{
-                        if(!walistviewroot.isSelected(index))
-                            select(index)
+                        if(!walistviewroot.isSelected(model.jid))
+                            select(model.jid)
                         else
-                            unSelect(index)
+                            unSelect(model.jid)
                     }
                 }
             }

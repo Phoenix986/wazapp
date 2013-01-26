@@ -61,7 +61,7 @@ Page {
                 text: qsTr("Next")
                 //enabled: mainPage.checkFilled()
                 onClicked: {
-                    if(codeField.value.length >= 3){
+                    if(codeField.value.length == 6){
 
                         saveAccount(codeField.value);
                     }

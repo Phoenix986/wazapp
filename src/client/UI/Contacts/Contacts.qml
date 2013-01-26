@@ -138,7 +138,7 @@ WAPage {
 			contactShowedName: searchInput.text.length>0 ? replaceText(model.name, searchInput.text) : model.name
             contactStatus: model.status? model.status : ""
             contactNumber: model.number
-			//isNew: model.newContact
+	    isNew: model.newContact
 
 			//isVisible: ((y >= ListView.view.contentY+100 && y <= ListView.view.contentBottom-100) ||
             //           (y+height >= ListView.view.contentY+100 && y+height <= ListView.view.contentBottom-100))
@@ -171,12 +171,13 @@ WAPage {
 		anchors.rightMargin: 16
 		anchors.verticalCenter: header.verticalCenter 
 		source: "../common/images/refresh.png"
-        visible:false//for now
 		MouseArea {
 			anchors.fill: parent
 			onClicked: {
+			    runIfOnline(function(){
 				refreshPics.visible = false
 				getPictures()
+			    }, true);
 			}
 		}
 	}
@@ -186,14 +187,14 @@ WAPage {
 		anchors.rightMargin: 16
 		anchors.verticalCenter: header.verticalCenter 
         platformStyle: BusyIndicatorStyle { size: "medium";}
-        visible: false//!refreshPics.visible
+        visible: !refreshPics.visible
         running: visible
     }
 
 	Connections {
 		target: appWindow
 		onGetPicturesFinished: {
-            //refreshPics.visible = true
+		refreshPics.visible = true
 		}	
 	}
 
@@ -294,7 +295,7 @@ WAPage {
             spacing: 1
 			cacheBuffer: 30000 // contactsModel.count * 81 --> this should work too.
 			highlightFollowsCurrentItem: false
-            section.property: "name"
+            section.property: "alphabet"
             section.criteria: ViewSection.FirstCharacter
 
             /*section.delegate: GroupSeparator {
@@ -312,7 +313,17 @@ WAPage {
                 width:parent.width-44
                 renderSection: fast.sectionExists(section) && searchInput.text===""
                 height:renderSection?50:0
-                currSection: section
+                currSection: section.toUpperCase()
+                
+                Connections {
+			target: appWindow
+			onRefreshSuccessed: {
+				fast.listViewChanged()
+				renderSection = fast.sectionExists(section) && searchInput.text===""
+				height = renderSection && searchInput.text===""? 50:0
+			}
+		}
+
             }
 
 			Component.onCompleted: fast.listViewChanged()

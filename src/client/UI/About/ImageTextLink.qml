@@ -11,9 +11,13 @@ Button{
     property string url;
     height:img.height + 10
     property bool inverted
-
-
-    platformStyle: ButtonStyle{inverted: root.inverted;}
+    
+    platformStyle: ButtonStyle {
+	pressedTextColor: "lightgray"
+	inverted: root.inverted    
+        pressedBackground: "image://theme/color3-meegotouch-button-accent-background"
+        checkedBackground: "image://theme/color3-meegotouch-button-background-selected-horizontal-normal"
+    }
 
     Row{
         anchors.left: parent.left

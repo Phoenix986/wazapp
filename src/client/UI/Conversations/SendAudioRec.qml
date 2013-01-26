@@ -71,10 +71,9 @@ WAPage {
 		anchors.bottomMargin: 20
 		spacing: 16
 
-		Button {
+		WAButton {
 			height: 72
 			width: 384
-			platformStyle: ButtonStyle { inverted: true }
 			iconSource: "images/rec.png"
 			enabled: !recording && !recorded
 			onClicked: {
@@ -86,10 +85,9 @@ WAPage {
 		Row {
 			spacing: 16
 
-			Button {
+			WAButton {
 				height: 72
 				width: 120
-				platformStyle: ButtonStyle { inverted: true }
 				iconSource: "images/play.png"
 				enabled: recorded
 				onClicked: {
@@ -97,10 +95,9 @@ WAPage {
 				}
 			}
 
-			Button {
+			WAButton {
 				height: 72
 				width: 120
-				platformStyle: ButtonStyle { inverted: true }
 				iconSource: "images/stop.png"
 				enabled: recording
 				onClicked: {
@@ -110,10 +107,9 @@ WAPage {
 				}
 			}
 
-			Button {
+			WAButton {
 				height: 72
 				width: 120
-				platformStyle: ButtonStyle { inverted: true }
 				iconSource: "images/delete.png"
 				enabled: recorded
 				onClicked: {

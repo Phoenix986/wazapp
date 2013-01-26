@@ -21,7 +21,7 @@ Rectangle {
 
    Rectangle {
        anchors.fill: parent
-       color:mousearea.pressed ? "#218ade":"#3c3c3b"
+       color:mousearea.pressed ? "#27a01b":"#3c3c3b"
    }
    Image {
        id:emojiImage

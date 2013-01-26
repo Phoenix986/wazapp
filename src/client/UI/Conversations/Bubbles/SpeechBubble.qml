@@ -23,6 +23,11 @@ Rectangle {
     state: state_status;
 
 	signal optionsRequested();
+    signal nameClicked();
+    signal nameHolded();
+    signal clickOutside();
+    signal holdOutside();
+
     signal clicked();
 
 	width: appWindow.inPortrait ? 480 : 854
@@ -45,8 +50,15 @@ Rectangle {
         //console.log(imageSrc);
         return imageSrc;
     }
+    
+	MouseArea {
+	    anchors.fill: parent
+	    onClicked: clickOutside()
+	    onPressAndHold: holdOutside()
+	}
 
 	BorderImage {
+		id: bubbleImage
 		anchors.top: parent.top
 		anchors.topMargin: from_me==1? 8 : from_me==2? 2 : 1
 		anchors.left: parent.left
@@ -102,6 +114,14 @@ Rectangle {
 		anchors.leftMargin: from_me==1 ? (20+(mediatype_id==1?0:66)) : (80-(mediatype_id==1?0:66))
 		horizontalAlignment: Text.AlignRight
 		visible: name!="" && from_me==0
+		MouseArea {
+		    anchors.top: parent.top
+		    anchors.right: parent.right
+		    width: bubbleImage.width
+		    height: parent.height
+		    onClicked: bubble.nameClicked()
+		    onPressAndHold: bubble.nameHolded()
+		}
 	}
 
 	Item{

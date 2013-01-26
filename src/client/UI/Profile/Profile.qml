@@ -146,7 +146,7 @@ WAPage {
 			width: parent.width
 		}
 
-		Button {
+		WAButton {
 			id: statusButton
 			height: 50
 			width: parent.width
@@ -159,7 +159,7 @@ WAPage {
 			width: parent.width
 		}
 
-		Button {
+		WAButton {
 			height: 50
 			width: parent.width
 			font.pixelSize: 22

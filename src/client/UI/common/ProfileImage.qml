@@ -103,7 +103,7 @@ Item {
             smooth: true
             fillMode: Image.PreserveAspectCrop
 			cache: false
-            source: imgsource.indexOf("@")>-1 ? "" : imgsource
+            source: imgsource.indexOf("@")>-1 ? "" : imgsource+"?ran=" + Math.random() //hacking cache
 			onStatusChanged: {
                 if (image1.status==Image.Ready) istate="Loaded!";
 				if (image1.status==Image.Error) istate=imgsource;

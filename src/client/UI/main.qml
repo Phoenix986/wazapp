@@ -22,6 +22,7 @@
 import QtQuick 1.1
 import com.nokia.meego 1.0
 import com.nokia.extras 1.0
+import QtMobility.feedback 1.1
 
 import "Chats"
 import "common"
@@ -56,13 +57,15 @@ WAStackWindow {
         theme.inverted = MySettings.getSetting("ThemeColor", "White")=="Black"
         mainBubbleColor = parseInt(MySettings.getSetting("BubbleColor", "1"))
         sendWithEnterKey = MySettings.getSetting("SendWithEnterKey", "Yes")=="Yes"
+	removeReceivedMedia = MySettings.getSetting("RemoveReceivedMedia", "Yes")=="Yes"
         resizeImages = MySettings.getSetting("ResizeImages", "Yes")=="Yes"
         orientation = parseInt(MySettings.getSetting("Orientation", "0"))
-        vibraForPersonal = MySettings.getSetting("PersonalVibrate", "Yes")
-        vibraForGroup = MySettings.getSetting("GroupVibrate", "Yes")
+        vibraForPersonal = MySettings.getSetting("PersonalVibrate", "Yes")=="Yes"
+        vibraForGroup = MySettings.getSetting("GroupVibrate", "Yes")=="Yes"
+        notifierChatBehaviour = MySettings.getSetting("NotifierChatBehaviour", "No")=="Yes"
         personalRingtone = MySettings.getSetting("PersonalRingtone", "/usr/share/sounds/ring-tones/Message 1.mp3")
         groupRingtone = MySettings.getSetting("GroupRingtone", "/usr/share/sounds/ring-tones/Message 1.mp3")
-        myBackgroundImage = MySettings.getSetting("Background", "none")
+        myBackgroundImage = MySettings.getSetting("Background"+(screen.currentOrientation==Screen.Portrait?"Portrait":"Landscape"), "none")
         myBackgroundOpacity = MySettings.getSetting("BackgroundOpacity", "5")
         setBackground(myBackgroundImage)
     }
@@ -74,16 +77,18 @@ WAStackWindow {
     property bool dialogOpened: false
     property int mainBubbleColor
     property bool sendWithEnterKey
+    property bool removeReceivedMedia
     property bool resizeImages
     //property string selectedPicture//@@THIS IS FUCKING RETARDED!!!!!!!!
     property string selectedContactName: ""//@@THIS IS FUCKING RETARDED!!!!!!!!
     //property string selectedGroupPicture//@@THIS IS FUCKING RETARDED!!!!!!!!
     //property string bigProfileImage //@@THIS IS FUCKING RETARDED!!!!!!!!
     property int orientation
+    property bool notifierChatBehaviour
     property string personalRingtone
     property string groupRingtone
-    property string vibraForPersonal
-    property string vibraForGroup
+    property bool vibraForPersonal
+    property bool vibraForGroup
     property bool initializationDone: false
     property string currentSelectionProfile//@@THIS IS FUCKING RETARDED!!!!!!!!
     property string currentSelectionProfileValue//@@THIS IS FUCKING RETARDED!!!!!!!!
@@ -101,6 +106,7 @@ WAStackWindow {
     signal consoleDebug(string text);
 
     signal changeStatus(string new_status)
+    signal forwardMessage(string jid, string msgjid, int msg_id)
     signal sendMessage(string jid, string msg);
     signal requestPresence(string jid);
     signal refreshContacts(string mode, string jid);
@@ -108,6 +114,7 @@ WAStackWindow {
     signal sendPaused(string jid);
     signal deleteConversation(string jid);
     signal deleteMessage(string jid, int msg_id);
+    signal tryDeleteMediaFile(string filepath);
     signal conversationActive(string jid);
     signal fetchMedia(int id);
     signal fetchGroupMedia(int id);
@@ -118,6 +125,7 @@ WAStackWindow {
     signal sendSMS(string num)
     signal makeCall(string num)
     signal getGroupInfo(string jid);
+    signal getServerGroups();
     signal createGroupChat(string subject);
     signal addParticipants(string gjid, string participants);
     signal addedParticipants();
@@ -130,8 +138,9 @@ WAStackWindow {
     signal getPictureIds(string jids);
     signal getPicture(string jid);
     signal onContactPictureUpdated(string ujid);
-    signal setGroupPicture(string jid, string file);
-    signal setMyProfilePicture(string file);
+    signal setGroupPicture(string jide);
+    signal setMyProfilePicture();
+    signal transformPicture(string file, string newfile, int posX, int posY, int sizeW, int sizeH, int maxSize, int rotation);
     signal sendMediaMessage(string jid, string data, string image, string preview);
     signal sendMediaImageFile(string jid, string file);
     signal sendMediaVideoFile(string jid, string file, string preview);
@@ -164,6 +173,7 @@ WAStackWindow {
     signal setBlockedContacts(string contacts);
     signal setResizeImages(bool resize);
     signal openCamera(string jid, string mode);
+    signal setNotifierChatBehaviour(bool value);
     signal setPersonalRingtone(string value);
     signal setPersonalVibrate(bool value);
     signal setGroupRingtone(string value);
@@ -278,25 +288,6 @@ WAStackWindow {
             browserModel.append(files[i])
         }
         browserUpdated();
-    }
-
-    function addRecentEmoji(emojicode) {
-
-	var emoji = []
-	var emojilist = MySettings.getSetting("RecentEmoji", "")
-
-	if (emojilist!="")
-		emoji = emojilist.split(',')
-
-	for (var i=0; i<emoji.length; ++i) {
-		if (emoji[i]==emojicode) {
-			emoji.splice(i,1)
-			break;
-		}
-	}
-
-	emoji.push(emojicode)
-	MySettings.setSetting("RecentEmoji", emoji.toString())
     }
 
     signal groupCreated(string group_id)
@@ -447,7 +438,14 @@ WAStackWindow {
     }
 
     function setSplashOperation(op) {
-        splashPage.setCurrentOperation(op)
+	if (op=="contacts") 
+	    splashPage.setCurrentOperation("Loading Contacts")
+	else if (op=="convs")
+	    splashPage.setCurrentOperation("Loading Conversations")
+	else if (op=="phone")
+	    splashPage.setCurrentOperation("Loading Phone Contacts")
+
+	splashPage.nextStage()
     }
 
     function onInitDone(){
@@ -528,16 +526,22 @@ WAStackWindow {
         //tabGroups.currentTab=waContacts;
         appWindow.pageStack.push(loadingPage);
         refreshContacts("SYNC","ALL");
+
     }
 
     signal refreshSuccessed
     function onRefreshSuccess(){
         if(!updateSingleStatus) {
-            appWindow.pageStack.pop();
+	    loadingPage.operation = qsTr("Loading groups...");
+	    getServerGroups()
             //getPictures()
         }
         updateSingleStatus = false
+    }
+    
+    function onGotServerGroups(){
         refreshSuccessed()
+        appWindow.pageStack.pop();
     }
 
     signal refreshFailed
@@ -593,6 +597,7 @@ WAStackWindow {
         resizeImages = MySettings.getSetting("ResizeImages", "Yes")=="Yes" ? true : false
         setResizeImages(resizeImages)
 
+        setNotifierChatBehaviour(MySettings.getSetting("NotifierChatBehaviour", "No")=="Yes")
         setPersonalRingtone(MySettings.getSetting("PersonalRingtone", "/usr/share/sounds/ring-tones/Message 1.mp3"));
         setPersonalVibrate(MySettings.getSetting("PersonalVibrate", "Yes")=="Yes"); //changed to be passed as boolean
         setGroupRingtone(MySettings.getSetting("GroupRingtone", "/usr/share/sounds/ring-tones/Message 1.mp3"));
@@ -649,7 +654,7 @@ WAStackWindow {
               }
 
           }
-
+          updateContactName(jid,pushName);
     }
 
     function updateContactsData(contacts, ujid, npush){
@@ -741,7 +746,7 @@ WAStackWindow {
             for(var j =0; j<contactsModel.count; j++) {
                 if (currentContacts.indexOf(contactsModel.get(j).jid)==-1 ) {
                     currentContacts = currentContacts + "," + contactsModel.get(j).jid
-                    //contactsModel.get(j).newContact = true
+                    contactsModel.get(j).newContact = true
                     newContacts = newContacts +1
                 }
             }
@@ -812,14 +817,16 @@ WAStackWindow {
 
 
     /****Conversation related slots****/
+    
+    function conversationsCount(max) {
+      if(!initializationDone)
+	splashPage.setProgressMax(max)
+	splashPage.step()
+    }
 
     function conversationReady(conv){
         //This should be called if and only if conversation start point is backend
         consoleDebug("Got a conv in conversationReady slot: " + conv.jid);
-
-
-        if(!initializationDone)
-            splashPage.setSubOperation(conv.jid)
 
         breathe()
         var conversation = waChats.getOrCreateConversation(conv.jid);
@@ -848,6 +855,7 @@ WAStackWindow {
 
         }
 
+        if (conversation.title=="") conversation.rebind()
     }
 
     signal reorderConversation(string cjid) //@@THIS IS FUCKING RETARDED!!!!!!!!
@@ -856,6 +864,8 @@ WAStackWindow {
     function messagesReady(messages,reorder){
         consoleDebug("GOT MESSAGES SIGNAL");
         var conversation = waChats.getOrCreateConversation(messages.jid);
+        //var contact = waContacts.getOrCreateContact({jid:messages.jid});
+        //conversation.addContact(contact);
         consoleDebug("proceed to check validity of conv")
         if(!conversation){
             consoleDebug("FATAL UI ERROR, HOW COME CONV IS NOT HERE?!!");
@@ -864,7 +874,7 @@ WAStackWindow {
 
         conversation.unreadCount=messages.conversation.unreadCount?messages.conversation.unreadCount:0;
         conversation.remainingMessagesCount = messages.conversation.remainingMessagesCount;
-
+        if (conversation.title=="") conversation.rebind()
         consoleDebug("Adding messages to conv")
         for (var i =0; i< messages.data.length; i++)
         {
@@ -882,6 +892,10 @@ WAStackWindow {
         if(messages.data.length == 1 && messages.data[0].type == 0)
         onPaused(messages.jid)
 
+        if(!initializationDone) {
+            splashPage.setSubOperation(messages.jid)
+	    splashPage.step()
+	}
     }
 
     function checkUnreadMessages() {
@@ -958,6 +972,8 @@ WAStackWindow {
         }
         messageDelivered(message_id,jid)
     }
+    
+    signal sleep(int delay);
 
         /**** Media ****/
    /* function onMediaTransferSuccess(jid,message_id,mediaObject){
@@ -990,12 +1006,13 @@ WAStackWindow {
 
     WASplash{
         id:splashPage
-        version:waversion
+        version:waversion+wabuild
+        showSubProgress: false
     }
 
     AboutDialog{
         id:aboutDialog
-        wazappVersion: waversion
+        wazappVersion: waversion+wabuild
         yowsupVersion: typeof(interfaceVersion)!="undefined"?interfaceVersion:"0.0"
     }
 
@@ -1046,6 +1063,10 @@ WAStackWindow {
 
     LoadingPage{
         id:loadingPage
+    }
+    
+    Broadcast{
+	id: broadcastMessage
     }
 
     ListModel{
@@ -1185,4 +1206,18 @@ WAStackWindow {
         onAccepted: appWindow.pageStack.push(updatePage);
     }
 
+    ThemeEffect {
+      id: popupEffect
+      effect: ThemeEffect.PopupOpen
+    }
+    
+    ThemeEffect {
+      id: pressEffect
+      effect: ThemeEffect.PopUp
+    }
+    
+    ThemeEffect {
+      id: clickEffect
+      effect: ThemeEffect.BasicButton
+    }
 }

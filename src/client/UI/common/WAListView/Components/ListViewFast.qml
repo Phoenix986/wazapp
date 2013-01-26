@@ -20,16 +20,16 @@ Item {
         cacheBuffer: 30000
         highlightFollowsCurrentItem: false
 
-        section.property: "name"
+        section.property: "alphabet"
         section.criteria: ViewSection.FirstCharacter
 
         section.delegate: SectionDelegate{
             anchors.left: parent.left
             anchors.leftMargin: 16
             width:parent.width-44
-            renderSection: fast.sectionExists(section)
+            renderSection: true//fast.sectionExists(section)
             height:renderSection?50:0
-            currSection: section
+            currSection: section.toUpperCase()
         }
 
         Component.onCompleted: {  fast.listViewChanged();}

@@ -33,6 +33,7 @@ class MessageStore(QObject):
 	messageStatusUpdated = QtCore.Signal(str,int,int);
 	messagesReady = QtCore.Signal(dict,bool);
 	conversationReady = QtCore.Signal(dict);
+	conversationsCount = QtCore.Signal(int);
 	conversationExported = QtCore.Signal(str, str); #jid, exportePath
 	conversationMedia = QtCore.Signal(list);
 	conversationGroups = QtCore.Signal(list);
@@ -88,7 +89,11 @@ class MessageStore(QObject):
 			self.store.Message.delete({"conversation_id":conv.id, "id":msgid})
 		else:
 			self.store.Groupmessage.delete({"groupconversation_id":conv.id, "id":msgid})
+			
+	def tryDeleteMediaFile(self,filepath):
 
+		if os.path.exists(filepath):
+			os.remove(filepath)
 
 	def removeSingleContact(self, jid):
 		self._d("Removing contact: "+jid);
@@ -245,6 +250,8 @@ class MessageStore(QObject):
 
 		convList = sorted(convList, key=lambda k: k['lastdate']);
 		convList.reverse();
+		
+		self.conversationsCount.emit(len(convList));
 
 		for ci in convList:
 			messages = []

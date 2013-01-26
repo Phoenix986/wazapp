@@ -72,13 +72,13 @@ WAPage {
         console.log("SHOULD PUSH "+jids)
         jids = jids.split(",")
         ProfileHelper.currentParticipantsJids.length = 0;
-        for(var i=0; i<contactsModel.count; i++) {
+	for(var i=0; i<contactsModel.count; i++) {
 
-            var tmp = contactsModel.get(i)
+	    var tmp = contactsModel.get(i)
 
-            for(var j=0; j<jids.length; j++){
+	    for(var j=0; j<jids.length; j++){
 
-                if(tmp.jid == jids[j]) {
+                if(tmp.jid == jids[j] && jids[j]!=myAccount) {
                     var modelData = {name:tmp.name, picture:tmp.picture, jid:tmp.jid, relativeIndex:i};
                     participantsModel.append(modelData)
                     ProfileHelper.currentParticipantsJids.push(tmp.jid)
@@ -129,10 +129,10 @@ WAPage {
         if(status == PageStatus.Activating){
 
             if(!loaded){
-                //getInfo()
+                getInfo()
                 loaded = true
             }
-
+            
             genericSyncedContactsSelector.tools = participantsSelectorTools
         }
     }
@@ -294,25 +294,30 @@ WAPage {
             height: 10
         }
 
-        Button {
-            id: statusButton
-            height: 50
-            width: parent.width
-            font.pixelSize: 22
-            text: qsTr("Change group subject")
-            enabled: !working && groupSubjectOwner!=""
-            onClicked: runIfOnline(function(){pageStack.push(groupSubjectChanger)}, true);
-        }
+        ButtonColumn {
+		anchors.left: parent.left
+		anchors.right: parent.right
+		anchors.leftMargin: 16
+		anchors.rightMargin: 16
+		
+		WAButton {
+		    id: statusButton
+		    font.pixelSize: 22
+		    text: qsTr("Change group subject")
+		    enabled: !working && groupSubjectOwner!=""
+		    focusable: false
+		    onClicked: runIfOnline(function(){pageStack.push(groupSubjectChanger)}, true);
+		}
 
-        Button {
-            id: picButton
-            height: 50
-            width: parent.width
-            font.pixelSize: 22
-            text: qsTr("Change group picture")
-            enabled: !working
-            onClicked: runIfOnline(function(){pageStack.push(setProfilePicture)}, true);
-        }
+		WAButton {
+		    id: picButton
+		    font.pixelSize: 22
+		    text: qsTr("Change group picture")
+		    enabled: !working
+		    focusable: false
+		    onClicked: runIfOnline(function(){pageStack.push(setProfilePicture)}, true);
+		}
+	}
 
         Separator {
             width: parent.width
@@ -324,10 +329,25 @@ WAPage {
     SelectPicture {
         id:setProfilePicture
         onSelected: {
-            pageStack.pop()
-            breathe();
-            setGroupPicture(jid, path)
+	    breathe()
+            resizePicture.maximumSize = 480
+	    resizePicture.minimumSize = 192
+	    resizePicture.picture = path
+	    resizePicture.filename = "temp.jpg"
+            pageStack.replace(resizePicture)
         }
+    }
+    
+    ResizePicture {
+	id: resizePicture
+	onSelected: {		
+		pageStack.pop()
+		
+		runIfOnline(function(){
+			breathe()
+			setGroupPicture(jid)
+		}, true)
+	}
     }
 
     ChangeSubject{
@@ -390,7 +410,7 @@ WAPage {
                            var p = participantsModel.get(i)
 
                             if(p.relativeIndex >= 0)
-                                genericSyncedContactsSelector.select(participantsModel.get(i).relativeIndex)
+                                genericSyncedContactsSelector.select(participantsModel.get(i).jid)
                         }
 
                         genericSyncedContactsSelector.multiSelectmode = true
@@ -411,15 +431,23 @@ WAPage {
             anchors.left: parent.left
             anchors.right: parent.right
             allowRemove: myAccount==groupOwnerJid
-            allowSelect: false
+            allowSelect: true
             allowFastScroll: false
             emptyLabelText: qsTr("No participants")
+
+            onSelected: {
+                if (selectedItem.jid != myAccount) {
+                    var c = waContacts.getOrCreateContact({"jid":selectedItem.jid});
+                    if(c)
+                        c.openProfile();
+                }
+            }
 
             onRemoved: {
 
                 var rmItem = participantsModel.get(index)
 
-                genericSyncedContactsSelector.unSelect(rmItem.relativeIndex)
+                genericSyncedContactsSelector.unSelect(rmItem.jid)
 
 
                 if(ProfileHelper.currentParticipantsJids.indexOf(rmItem.jid) >= 0 ) {
@@ -516,10 +544,10 @@ WAPage {
                 var modelData;
                 for(var i=0; i<selected.length; i++) {
                     consoleDebug("Appending")
-
-                    modelData = {name:selected[i].data.name, picture:selected[i].data.picture, jid:selected[i].data.jid, relativeIndex:selected[i].selectedIndex};
-
-                   participantsModel.append(modelData)
+                    if (selected[i].data.jid != myAccount) {
+                        modelData = {name:selected[i].data.name, picture:selected[i].data.picture, jid:selected[i].data.jid, relativeIndex:selected[i].selectedIndex};
+                        participantsModel.append(modelData)
+                    }
                 }
 
                 participantsModel.append({name:qsTr("You"), picture:currentProfilePicture || defaultProfilePicture, noremove:true})

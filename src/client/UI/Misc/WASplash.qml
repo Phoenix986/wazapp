@@ -1,36 +1,54 @@
-// import QtQuick 1.0 // to target S60 5th Edition or Maemo 5
 import QtQuick 1.1
 import "../common"
 import com.nokia.meego 1.0
 WAPage {
-
     property string operation:qsTr("Initializing")
     property string subOperation:""
     property string version
+    property int stage: 0
     orientationLock: PageOrientation.LockPortrait
+    property int curProgress
+    property int maximumValue
+    property bool showSubProgress: true
+    property int position: 0
 
     function setCurrentOperation(op) {
-		progress.visible = false
-        subOperation = ""
-        operation = qsTr(op)
+		subOperation = ""
+		operation = qsTr(op)
+    }
+    
+    function nextStage() {
+	stage++
+	position=0
     }
 
     function setSubOperation(subop) {
         subOperation = subop
     }
 
-	function setProgressMax(val) {
-		progress.maximumValue = val
+    function setProgressMax(val) {
+	maximumValue = val
+    }
+    
+    function step() {
+	if (position+1 <= maximumValue) {
+	    position++
+	    setProgress(position)
+	    setOpacity(position)
 	}
+    }
 
-	function setProgress(val) {
-		progress.value = val
-	}
+    function setProgress(val) {
+	    var part = 100/maximumValue
+	    curProgress = parseInt(part*val /10)
+	    progress.source = "images/" + stage + curProgress + "0.png"
+    }
 
-	function resetProgress() {
-        //progress.visible = true
-		progress.value = 0
-	}
+    function setOpacity(val) {
+	    if (!theme.inverted)
+		blackbg.opacity = 1.0 - (1.0/maximumValue) * val
+	    background.opacity = (myBackgroundOpacity/maximumValue/10.0) * val
+    }
 
     onStatusChanged: {
       /*  if(status == PageStatus.Activating){
@@ -41,37 +59,71 @@ WAPage {
               appWindow.showToolBar = true
         }*/
     }
-
+    
+    Rectangle {
+	id: whitebg
+	anchors.fill: parent
+	color: "white"
+    }
+    
+    Rectangle {
+	id: blackbg
+	anchors.fill: parent
+	color: "black"
+	opacity: 1.0
+	
+	transitions: Transition {
+	    NumberAnimation {
+		target: blackbg
+		property: "opacity"
+		from: blackbg.opacity
+		alwaysRunToEnd: true
+		duration: 7000
+	    }
+	}
+    }
+	
     Image {
-        id: name
-        source: "../common/images/splash/wasplash90.png"
-        anchors.fill: parent
-        smooth: true
-
+	id: background
+	anchors.fill: parent
+	source: myBackgroundImage!="none" ? (WAConstants.CACHE_PATH+"/"+"background-portrait.jpg" + "?ran=" + Math.random()) : ""
+	fillMode: Image.PreserveAspectCrop
+	opacity: 0
+	
+	transitions: Transition {
+	    NumberAnimation {
+		target: background
+		property: "opacity"
+		from: background.opacity
+		alwaysRunToEnd: true
+		duration: 7000
+	    }
+	}
+    }
+    
+    Image {
+	id: progress
+	width: 180
+	height: 180
+	anchors.left: parent.left
+	anchors.top: parent.top
+	anchors.topMargin: 246
+	anchors.leftMargin: 150
+	source: "images/100.png"
     }
 
     Column{
+	id: textColumn
         width:parent.width
-		spacing: 20
+	spacing: 20
         y:450
 
         Label{
             text:operation
-            color: "white"
+            color: "gray"
             horizontalAlignment: Text.AlignHCenter
-            font.bold: true
+            //font.bold: true
             width:parent.width
-        }
-
-		ProgressBar{
-			id: progress
-			width: 360
-            visible:false
-			anchors.horizontalCenter: parent.horizontalCenter
-			minimumValue: 0
-			platformStyle: ProgressBarStyle {
-				knownTexture: "../common/images/splashprogress.png"
-			}
         }
 
         Label{
@@ -79,16 +131,19 @@ WAPage {
             color: "white"
             horizontalAlignment: Text.AlignHCenter
             width:parent.width
+            visible: showSubProgress
         }
     }
 
     Label{
+	id: verlabel
         text:version
         width:parent.width
         horizontalAlignment: Text.AlignHCenter
-        color:"white"
+        color:"#269f1a"
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 20
+	opacity: 0.8
     }
 
 }

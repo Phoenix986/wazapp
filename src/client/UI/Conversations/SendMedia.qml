@@ -27,42 +27,53 @@ Item {
 
 	signal selected(string value)
 
-	BorderImage {
+	Rectangle {
 		id: panel
 		anchors.fill: parent
-		anchors.leftMargin: 12
-		anchors.rightMargin: 12
-		source: theme.inverted? "../common/images/back2.png" : "../common/images/back1.png"
-		border { left: 22; right: 22; bottom: 22; top: 22; }
-		smooth: true
+		color: theme.inverted? "#1A1A1A" : "white"
+		
+		Rectangle {
+			height: 1
+			width: parent.width
+			x:0; y:0
+			color: "gray"
+			opacity: 0.4
+		}
 
 		MouseArea {
 			anchors.fill: parent
 			//onClicked: selected("nothing")
 		}
 
-		GridView {
+		ListView {
 			anchors.fill: parent
-			cellWidth: 100
-			cellHeight: 76
-			anchors.topMargin: 12
-			anchors.leftMargin: appWindow.inPortrait? 26 : 14
-			interactive: false
+			orientation: ListView.Horizontal
+			clip: true
 
 			model: ListModel {
-                ListElement { name: "Picture"; value: "pic"; usable: true;}
-                ListElement { name: "Picture2"; value: "campic"; usable: true;}
-                ListElement { name: "Video"; value: "vid"; usable: true;}
-                ListElement { name: "Video2"; value: "camvid"; usable: true;}
-                ListElement { name: "Audio"; value: "audio"; usable: true;}
-                ListElement { name: "Audio2"; value: "rec"; usable: false;}
-                ListElement { name: "Location"; value: "location"; usable: true;}
-                ListElement { name: "Contact"; value: "vcard"; usable: true;}
+				ListElement { name: "Picture"; value: "pic"; usable: true;}
+				ListElement { name: "Picture2"; value: "campic"; usable: true;}
+				ListElement { name: "Video"; value: "vid"; usable: true;}
+				ListElement { name: "Video2"; value: "camvid"; usable: true;}
+				ListElement { name: "Audio"; value: "audio"; usable: true;}
+				ListElement { name: "Audio2"; value: "rec"; usable: false;}
+				ListElement { name: "Location"; value: "location"; usable: true;}
+				ListElement { name: "Contact"; value: "vcard"; usable: true;}
 			}
 
 			delegate: Item {
-				width: 100
-				height: 76
+				width: 64
+				height: 80
+				
+				Rectangle {
+				    id: background
+				    anchors.centerIn: parent
+				    width: 64
+				    height: 64
+				    visible: mouseArea.pressed && usable
+				    
+				    color: "lightgray"
+				}				
 
 				Image {
 					id: image
@@ -73,18 +84,6 @@ Item {
 					anchors.centerIn: parent
 					opacity: usable? 1 : 0.5
 				}
-
-				/*Label {
-					anchors.centerIn: rec
-					height: 32
-					width: 152
-					color: "white"
-					font.pixelSize: 14
-					text: fileName
-					wrapMode: Text.WrapAnywhere
-					horizontalAlignment : Text.AlignHCenter
-					verticalAlignment : Text.AlignVCenter
-				}*/
 
 				MouseArea {
 				    id: mouseArea

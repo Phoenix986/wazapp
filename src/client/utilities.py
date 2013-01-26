@@ -16,16 +16,16 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with 
 Wazapp. If not, see http://www.gnu.org/licenses/.
 '''
-import md5
+from hashlib import md5
 import string
 
 from QtMobility.SystemInfo import QSystemDeviceInfo,QSystemNetworkInfo
 class Utilities():
 
-	debug_mode = 0;
+	debug_mode = 1;
 	
 	waversion = "0.9.17"
-	
+	wabuild = ".0.nightly20"
 
 	
 	@staticmethod

@@ -10,7 +10,7 @@ Item {
     property string text
     signal clicked
     property alias pressed: mouseArea.pressed
-	property bool singleItem: false
+	property bool topItem: false
 	property bool bottomItem: false
 
     // platformStyle API
@@ -33,11 +33,9 @@ Item {
     BorderImage {
        id: backgroundImage
        // ToDo: remove hardcoded values
-       source:  singleItem ? (pressed ? "image://theme/meegotouch-list-"+(theme.inverted?"inverted-":"")+"background-pressed" : 
-				"image://theme/meegotouch-list-"+(theme.inverted?"inverted-":"")+"background")
-              : bottomItem ? (pressed ? "image://theme/meegotouch-list-"+(theme.inverted?"inverted-":"")+"background-pressed-vertical-bottom" : 
+       source:  bottomItem ? (pressed ? "image://theme/meegotouch-list-"+(theme.inverted?"inverted-":"")+"background-pressed-vertical-bottom" : 
 				"image://theme/meegotouch-list-"+(theme.inverted?"inverted-":"")+"background-vertical-bottom")
-              : root.parent.children[0] == root ? 
+              : (root.parent.children[0] == root || topItem)? 
 				(pressed ? "image://theme/meegotouch-list-"+(theme.inverted?"inverted-":"")+"background-pressed-vertical-top" : 
 				"image://theme/meegotouch-list-"+(theme.inverted?"inverted-":"")+"background-vertical-top")
               : root.parent.children[root.parent.children.length-1] == root ? 

@@ -26,7 +26,7 @@ from QtMobility.Contacts import *
 from QtMobility.Versit import *
 from constants import WAConstants
 from wadebug import WADebug;
-import sys
+import sys, re
 from waimageprocessor import WAImageProcessor
 from accountsmanager import AccountsManager
 
@@ -324,6 +324,7 @@ class ContactsManager(QObject):
 		super(ContactsManager,self).__init__();
 		self.manager = QContactManager(self);
 		self.contacts = []
+		self.filter = re.compile(r'[^(\+)(0-9)]')
 
 	def getContacts(self):
 		'''
@@ -338,8 +339,8 @@ class ContactsManager(QObject):
 			numbers = contact.details(QContactPhoneNumber.DefinitionName);
 
 			for number in numbers:
-				n = QContactPhoneNumber(number).number().replace("(", "").replace(")", "").replace(" ", "").replace("-", "")
-				self.contacts.append({"alphabet":label[0].upper(),"name":label,"number":n,"picture":avatar});
+				cleannumber = self.filter.sub('', QContactPhoneNumber(number).number())
+				self.contacts.append({"alphabet":label[0].upper(),"name":label,"number":cleannumber,"picture":avatar});
 
 		return self.contacts;
 
@@ -354,10 +355,9 @@ class ContactsManager(QObject):
 			numbers = contact.details(QContactPhoneNumber.DefinitionName);
 			allnumbers = []
 			
-			allnumbers = map(lambda n: QContactPhoneNumber(n).number().replace("(", "").replace(")", "").replace(" ", "").replace("-", ""), numbers   )
-			
-			#for number in numbers:
-			#	allnumbers.append(QContactPhoneNumber(number).number())
+			for number in numbers:
+				cleannumber = self.filter.sub('', QContactPhoneNumber(number).number())
+				allnumbers.append(cleannumber)
 
 			self.contacts.append({"name":label,"numbers":allnumbers,"picture":avatar});
 

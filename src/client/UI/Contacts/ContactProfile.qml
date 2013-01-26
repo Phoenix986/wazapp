@@ -75,32 +75,6 @@ WAPage {
         }
     }
 
-
-    ButtonStyle {
-        id: buttonStyleTop
-        property string __invertedString: theme.inverted ? "-inverted" : ""
-        pressedBackground: "image://theme/color3-meegotouch-button-background-pressed-vertical-top"
-        checkedBackground: "image://theme/color3-meegotouch-button-background-selected-vertical-top"
-        disabledBackground: "image://theme/color3-meegotouch-button"+__invertedString+"-background-disabled-vertical-top"
-        checkedDisabledBackground: "image://theme/color3-meegotouch-button"+__invertedString+"-background-disabled-selected-vertical-top"
-    }
-    ButtonStyle {
-        id: buttonStyleCenter
-        property string __invertedString: theme.inverted ? "-inverted" : ""
-        pressedBackground: "image://theme/color3-meegotouch-button-background-pressed-vertical-center"
-        checkedBackground: "image://theme/color3-meegotouch-button-background-selected-vertical-center"
-        disabledBackground: "image://theme/color3-meegotouch-button"+__invertedString+"-background-disabled-vertical-center"
-        checkedDisabledBackground: "image://theme/color3-meegotouch-button"+__invertedString+"-background-disabled-selected-vertical-center"
-    }
-    ButtonStyle {
-        id: buttonStyleBottom
-        property string __invertedString: theme.inverted ? "-inverted" : ""
-        pressedBackground: "image://theme/color3-meegotouch-button-background-pressed-vertical-bottom"
-        checkedBackground: "image://theme/color3-meegotouch-button-background-selected-vertical-bottom"
-        disabledBackground: "image://theme/color3-meegotouch-button"+__invertedString+"-background-disabled-vertical-bottom"
-        checkedDisabledBackground: "image://theme/color3-meegotouch-button"+__invertedString+"-background-disabled-selected-vertical-bottom"
-    }
-
     QueryDialog {
         id: chatHistoryDelete
         titleText: qsTr("Confirm Delete")
@@ -211,13 +185,17 @@ WAPage {
         ButtonColumn{
             id: buttonColumn
             width: parent.width
+            anchors.left: parent.left
+            anchors.leftMargin: 16
+            anchors.right: parent.right
+            anchors.rightMargin: 16
 
-            Button {
+            WAButton {
                 id: statusButton
-                platformStyle: buttonStyleTop
                 height: 50
                 width: parent.width
                 font.pixelSize: 22
+                focusable: false
                 text: qsTr("Update status")
                 onClicked: {
                         updateSingleStatus=true //@@retarded
@@ -227,12 +205,12 @@ WAPage {
                 }
             }
 
-            Button {
+            WAButton {
                 id: blockButton
-                platformStyle: buttonStyleCenter
                 height: 50
                 width: parent.width
                 font.pixelSize: 22
+                focusable: false
                 text: blockedContacts.indexOf(contactJid)==-1? qsTr("Ignore messages") : qsTr("Allow messages")
                 onClicked: {
                     if (blockedContacts.indexOf(contactJid)==-1)
@@ -242,32 +220,32 @@ WAPage {
                 }
             }
 
-            Button {
+            WAButton {
                 height: 50
-                platformStyle: buttonStyleCenter
                 width: parent.width
                 font.pixelSize: 22
+                focusable: false
                 text: qsTr("Add to contacts")
                 visible: !inContacts
                 onClicked: Qt.openUrlExternally("tel:"+contactNumber)
             }
 
-            Button {
+            WAButton {
                 id: sendChatButton
-                platformStyle: buttonStyleCenter
                 height: 50
                 width: parent.width
                 font.pixelSize: 22
+                focusable: false
                 text: qsTr("Send chat history")
                 onClicked: { exportConversation(contactJid); }
             }
 
-            Button {
+            WAButton {
                 id: deleteChatButton
-                platformStyle: buttonStyleBottom
                 height: 50
                 width: parent.width
                 font.pixelSize: 22
+                focusable: false
                 text: qsTr("Delete chat history")
                 onClicked: {
                     chatHistoryDelete.open()
@@ -279,7 +257,7 @@ WAPage {
 			id: separator3
 		        anchors.left: parent.left
 			anchors.right: parent.right
-			anchors.rightMargin: 5
+			anchors.rightMargin: 16
 		        height: conversationMediaModel.count>0? 36 : 0
 		        title: qsTr("Media")
 			visible: conversationMediaModel.count>0
@@ -341,12 +319,14 @@ WAPage {
 						anchors.fill: parent
 						onClicked: {
 							var prefix = ""
+							var postfix = ""
 							if (parent.prefixType == 5) {
 								prefix = "geo:"
+								postfix = "?action=showOnMap"
 							} else {
 								prefix = "file://"
 							}
-							Qt.openUrlExternally(prefix+local_path)
+							Qt.openUrlExternally(prefix+local_path+postfix)
 						}
 					}
 				}
@@ -356,7 +336,7 @@ WAPage {
 				id: separator2
 				anchors.left: parent.left
 				anchors.right: parent.right
-				anchors.rightMargin: 5
+				anchors.rightMargin: 16
 				visible: groupsRepeater.model.count==0 ? false : true
 				height: visible ? 36 : 0
 				title: qsTr("Groups")
@@ -438,7 +418,7 @@ WAPage {
 		id: separator1
 		anchors.left: parent.left
 		anchors.right: parent.right
-		anchors.rightMargin: 5
+		anchors.rightMargin: 16
 		height: 50
 		title: qsTr("Phone")
         }
@@ -446,20 +426,21 @@ WAPage {
         Item {
             id: telephonyItem
             height: 84
-            width: parent.width
-            x: 0
+            width: parent.width - 32
+            x: 16
 
             BorderImage {
                 height: 84
-                width: parent.width -80
+                width: parent.width - 80
                 x: 0; y: 0
-                source: "pics/buttons/button-left"+(theme.inverted?"-inverted":"")+(bArea.pressed? "-pressed" : "")+".png"
+                source: "image://theme/" + (bArea.pressed? "color3-" : "") + "meegotouch-button-" + (theme.inverted?"inverted-":"") + "background" + (bArea.pressed? "-pressed" : "") + "-horizontal-left"
                 border { left: 22; right: 22; bottom: 22; top: 22; }
 
                 Label {
                     x: 20; y: 14
                     width: parent.width
                     font.pixelSize: 20
+                    color: (bArea.pressed?"lightgray":(theme.inverted?"white":"black"))
                     text: qsTr("Mobile phone")
                 }
                 Label {
@@ -467,6 +448,7 @@ WAPage {
                     width: parent.width
                     font.bold: true
                     font.pixelSize: 24
+                    color: (bArea.pressed?"lightgray":(theme.inverted?"white":"black"))
                     text: "+"+contactNumber
                 }
                 MouseArea {
@@ -481,13 +463,13 @@ WAPage {
                 anchors.right: parent.right
                 width: 80
                 x: 0; y: 0
-                source: "pics/buttons/button-right"+(theme.inverted?"-inverted":"")+(bcArea.pressed? "-pressed" : "")+".png"
+                source: "image://theme/" + (bcArea.pressed? "color3-" : "") + "meegotouch-button-" + (theme.inverted?"inverted-":"") + "background" + (bcArea.pressed? "-pressed" : "") + "-horizontal-right"
                 border { left: 22; right: 22; bottom: 22; top: 22; }
 
                 Image {
-                    x: 18
+                    x: 16
                     anchors.verticalCenter: parent.verticalCenter
-                    source: "image://theme/icon-m-toolbar-new-message"+(theme.inverted?"-white":"")
+                    source: "image://theme/icon-m-toolbar-new-message"+(theme.inverted?"-white":"")+(bcArea.pressed? "-selected" : "")
                 }
                 MouseArea {
                     id: bcArea

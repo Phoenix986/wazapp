@@ -23,6 +23,8 @@ from PySide.QtNetwork import QNetworkSession, QNetworkConfigurationManager,QNetw
 import sys
 import PySide
 
+import dbus
+
 from wadebug import ConnMonDebug;
 
 class ConnMonitor(QObject):
@@ -42,56 +44,93 @@ class ConnMonitor(QObject):
 		self.manager = QNetworkConfigurationManager()
 		self.config = self.manager.defaultConfiguration() if self.manager.isOnline() else None
 		
+		self.mobiledata = True
+		self.cellular = True
+		
+		self.wasForceRequest = False
+		
 		self.manager.onlineStateChanged.connect(self.onOnlineStateChanged)
 		self.manager.configurationChanged.connect(self.onConfigurationChanged)
 		
-		self.connected.connect(self.onOnline)
-		self.disconnected.connect(self.onOffline)
+		#self.connected.connect(self.onOnline)
+		#self.disconnected.connect(self.onOffline)
 		self.session =  QNetworkSession(self.manager.defaultConfiguration());
 		self.session.stateChanged.connect(self.sessionStateChanged)
-		self.session.closed.connect(self.disconnected);
+		#self.session.closed.connect(self.disconnected);
 		#self.session.opened.connect(self.connected);
-		#self.createSession();
-		#self.session.waitForOpened(-1)
+		
+		self.bus = dbus.SystemBus()
+		mcebus = self.bus.get_object('com.nokia.mce', '/com/nokia/mce/signal')
+		self.mcenface = dbus.Interface(mcebus, 'com.nokia.mce.signal')
+		self.mcenface.connect_to_signal("radio_states_ind", self.mceStateChanged)
+		
+		self.mceStateChanged(open("/var/lib/mce/radio_states.online", "r").read())
 	
-	
+	def mceStateChanged(self,state):
+		if int(state)&4:
+			self.mobiledata = True
+			self.wasForceRequest = False
+			self._d("mce mobile data enabled. can connect to network now")
+		else:
+			self.mobiledata = False
+			
+		if int(state)&2:
+			self.cellular = True
+		else:
+			self.cellular = False
+		
 	def sessionStateChanged(self,state):
-		self._d("state changed "+str(state));
+		self._d("ConnMonitor.sessionStateChanged "+str(state));
+		if state==5: #QNetworkSession::Disconnected
+			self.disconnected.emit()
+			if not self.mobiledata and not self.wasForceRequest:
+				self.wasForceRequest = True
+				self.createSession()
+			elif self.wasForceRequest:
+				self._d("force connection request already used. cant auto connect to network now")
+			if self.mobiledata:
+				self.createSession()
+		if state==3:
+			self.connected.emit();
+	
+	def sessionState(self):
+		return self.session.state()
 	
 	def createSession(self):
-		
-		#self.session.setSessionProperty("ConnectInBackground", True);
-		self.session.open();
+		self._d("ConnMonitor.createSession")
+		if not self.session.isOpen():
+			self.session.open();
+			if self.session.waitForOpened(-1):
+				self._d("Network session opened!")
+				self.connected.emit()
 	
 	def isOnline(self):
-		return self.manager.isOnline()
+		myonline = self.manager.isOnline()
+		self._d("ConnMonitor.isOnline: " + str(myonline))
+		return myonline
 	
 	def onConfigurationChanged(self,config):
-		if self.manager.isOnline() and config.state() == PySide.QtNetwork.QNetworkConfiguration.StateFlag.Active:
+		self._d("ConnMonitor.onConfigurationChanged")
+		'''if self.manager.isOnline() and config.state() == PySide.QtNetwork.QNetworkConfiguration.StateFlag.Active:
 			if self.config is None:
 				self.config = config
 			else:
-				self.createSession();
-				self.connected.emit()
+				self.createSession();'''
 		
 	def onOnlineStateChanged(self,state):
+		self._d("ConnMonitor.onOnlineStateChanged: " + ("online" if state else "offline"))
 		self.online = state
-		if state:
+		'''if state:
 			self.connected.emit()
 		elif not self.isOnline():
 			self.config = None
-			self.disconnected.emit()
+			self.disconnected.emit()'''
 	
 	def onOnline(self):
 		self._d("ONLINE")
-		#self.session = QNetworkSession(self.config)
 	
 	def onOffline(self):
 		self._d("OFFLINE");
-	
-
-		
-		
 
 if __name__=="__main__":
 	app = QApplication(sys.argv)

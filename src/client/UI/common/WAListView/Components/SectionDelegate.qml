@@ -5,7 +5,7 @@ Item{
      id:sectionDelegateRoot
      property string currSection;
      property bool renderSection:true;
-
+     clip: true
 
      Loader{
          id:delegateLoader

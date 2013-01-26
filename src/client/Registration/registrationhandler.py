@@ -20,7 +20,7 @@ Wazapp. If not, see http://www.gnu.org/licenses/.
 from PySide.QtDeclarative import QDeclarativeView,QDeclarativeProperty
 from PySide import QtCore
 from wadebug import WADebug
-from PySide.QtCore import QUrl
+from PySide.QtCore import QUrl,QThread,QObject
 from accountsmanager import AccountsManager
 from utilities import Utilities
 from Yowsup.Registration.v2.coderequest import WACodeRequest
@@ -31,7 +31,7 @@ from Yowsup.Common.debugger import Debugger as YowsupDebugger
 import threading, time
 from constants import WAConstants
 import datetime
-#from smshandler import SMSHandler
+from smshandler import SMSHandler
 
 
 def async(fn):
@@ -131,11 +131,12 @@ class RegistrationUI(QDeclarativeView):
         self.rootContext().setContextProperty("initType", 1);
         self.rootContext().setContextProperty("mcc", Utilities.getMcc());
         
-        #self.smsHandler = SMSHandler()
-        #self.smsHandlerThread = QThread()
-        #self.smsHandler.moveToThread(self.smsHandlerThread)
-        #self.smsHandlerThread.started.connect(self.smsHandler.initManager)
-        #self.smsHandlerThread.start()
+        self.smsHandler = SMSHandler()
+        self.smsHandlerThread = QThread()
+        self.smsHandler.moveToThread(self.smsHandlerThread)
+        self.smsHandlerThread.started.connect(self.smsHandler.initManager)
+        self.smsHandler.gotCode.connect(self.registerRequest)
+        self.smsHandlerThread.start()
 
     def savePushname(self, pushName):
         self.account.accountInstance.setValue("pushName", pushName)

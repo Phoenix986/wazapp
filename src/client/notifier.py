@@ -17,19 +17,20 @@ You should have received a copy of the GNU General Public License along with
 Wazapp. If not, see http://www.gnu.org/licenses/.
 '''
 from mnotification import MNotificationManager,MNotification
-from PySide.QtGui import QSound
-from PySide.QtCore import QUrl, QCoreApplication
+#from PySide.QtGui import QSound
+from PySide.QtCore import QUrl, QCoreApplication, QObject
 from QtMobility.Feedback import QFeedbackHapticsEffect #QFeedbackEffect
-from QtMobility.SystemInfo import QSystemDeviceInfo
+#from QtMobility.SystemInfo import QSystemDeviceInfo
 from constants import WAConstants
 from utilities import Utilities
-from QtMobility.MultimediaKit import QMediaPlayer
+#from QtMobility.MultimediaKit import QMediaPlayer
 from PySide.phonon import Phonon
 from wadebug import NotifierDebug
 import dbus
 
-class Notifier():
+class Notifier(QObject):
 	def __init__(self,audio=True,vibra=True):
+		super(Notifier,self).__init__();
 		_d = NotifierDebug();
 		self._d = _d.d;
 
@@ -40,29 +41,26 @@ class Notifier():
 		self.personalVibrate = True;
 		self.groupRingtone = WAConstants.DEFAULT_SOUND_NOTIFICATION;
 		self.groupVibrate = True;
+		self.useChatNotifier = False;
+		self.soundPath = WAConstants.NO_SOUND
 		
-		QCoreApplication.setApplicationName("Wazapp");
+		#QCoreApplication.setApplicationName("Wazapp"); #activating forced Phonon to use system Media volume instead of any manual volume settings
 
 
-		self.audioOutput = Phonon.AudioOutput(Phonon.MusicCategory, None)
-		self.mediaObject = Phonon.MediaObject(None)
-		Phonon.createPath(self.mediaObject, self.audioOutput)		
+		self.audioOutput = Phonon.AudioOutput(Phonon.NotificationCategory, self)
+		self.mediaObject = Phonon.MediaObject(self)
+		Phonon.createPath(self.mediaObject, self.audioOutput)	
+		self.mediaObject.setCurrentSource(Phonon.MediaSource(self.soundPath))	
 
 		self.profileChanged(0, 0, self.getCurrentProfile(), 0)
 		bus = dbus.SessionBus()
 		mybus = bus.get_object('com.nokia.profiled', '/com/nokia/profiled')
 		self.nface = dbus.Interface(mybus, 'com.nokia.profiled')
 		self.nface.connect_to_signal("profile_changed", self.profileChanged)
-		#prof = self.getCurrentProfile()
-		#reply = self.nface.get_value(prof,"ringing.alert.volume");
-		#self.currentProfile = prof
-		#self.currentVolume = "1.0" if reply=="100" else "0." + reply
-		#self._d("Checking current profile: " + prof + " - Volume: " + self.currentVolume)
-		#self.audioOutput.setVolume(float(self.currentVolume))
 
 		
 		#self.newMessageSound = WAConstants.DEFAULT_SOUND_NOTIFICATION #fetch from settings
-		self.devInfo = QSystemDeviceInfo();
+		#self.devInfo = QSystemDeviceInfo();
 		
 		#self.devInfo.currentProfileChanged.connect(self.profileChanged);
 		
@@ -102,10 +100,16 @@ class Notifier():
 		nface = dbus.Interface(mynbus, 'com.nokia.profiled')
 		reply = nface.get_value(profile,"ringing.alert.volume");
 		self.currentProfile = profile
-		volume = int(reply) / 100.0
-		self.currentVolume = str(volume)
-		self._d("Checking current profile: " + profile + " - Volume: " + self.currentVolume)
-		self.audioOutput.setVolume(volume)
+		replyf = int(reply) / 100.0
+
+		newMax = 0.5
+		newMin = 0.1
+		oldMax = 1.0
+		oldMin = 0.4
+		
+		self.currentVolume = (((replyf - oldMin) * (newMax - newMin)) / (oldMax - oldMin)) + newMin
+		self._d("Checking current profile: " + profile + " - Volume: " + str(self.currentVolume))
+		self.audioOutput.setVolume(self.currentVolume)
 
 	
 	def enable(self):
@@ -137,7 +141,7 @@ class Notifier():
 			del self.notifications[jid]
 			self._d("DELETING NOTIFICATION BY ID "+str(nId));
 			self.manager.removeNotification(nId);
-			self.mediaObject.clear()
+			self.stopSound()
 
 				
 	def notificationCallback(self,jid):
@@ -152,11 +156,17 @@ class Notifier():
 			#self.manager.removeNotification(nId);
 		
 	def stopSound(self):
-		self.mediaObject.clear()
+		self.mediaObject.stop()
+		#self.mediaObject.clear()
+		#self.mediaObject.clearQueue()
 
-	def playSound(self,soundfile):
-		self.mediaObject.clear()
-		self.mediaObject.setCurrentSource(Phonon.MediaSource(soundfile))
+	def playSound(self,soundfile):			
+		self.stopSound()		
+		self._d("Play sound: " + soundfile + " - volume: " + str(self.currentVolume))
+		if soundfile != self.soundPath:
+			self.soundPath = soundfile
+			self.mediaObject.setCurrentSource(Phonon.MediaSource(self.soundPath))	
+			self.audioOutput.setVolume(self.currentVolume)
 		self.mediaObject.play()
 
 
@@ -177,7 +187,7 @@ class Notifier():
 		max_len = min(len(message),20)
 		
 		if self.enabled:
-			
+			#we dont post Chat notification, so sound and vibra should be manually played anyway
 			if(activeConvJId == jid or activeConvJId == ""):
 				if self.audio and ringtone!= WAConstants.NO_SOUND:
 					soundPath = WAConstants.DEFAULT_BEEP_NOTIFICATION;
@@ -189,43 +199,34 @@ class Notifier():
 					self.vibra.start()
 
 				return
+			    
+			#play vibra if only Chat notification disabled
+			if self.vibra and not self.useChatNotifier and vibration:
+				self.vibra.start()
 
-
-
-			if self.audio and ringtone!=WAConstants.NO_SOUND:
+			#play sound if only Chat notification disabled
+			if self.audio and not self.useChatNotifier and ringtone!=WAConstants.NO_SOUND:
 				soundPath = self.getCurrentSoundPath(ringtone);
-				self._d(soundPath)
 				self.playSound(soundPath)
 
+			eventtype = "wazapp.message.chat" if self.useChatNotifier else "wazapp.message.new" #Chat notification is used. Same with old, but Chat feedbackId is used
+			count = 1
+			if self.notifications.has_key(jid):
+			    count = self.notifications[jid]['count'] + 1
+			    
+			self.hideNotification(jid)
 			
-			n = MNotification("wazapp.message.new",contactName, message);
+			n = MNotification(eventtype,contactName, message);
 			n.image = picture
 			n.manager = self.manager;
 			action = lambda: self.notificationCallback(jid)
 			
-			n.setAction(action);
-		
-			notifications = n.notifications();
-			
-			if self.notifications.has_key(jid):
-				nId = self.notifications[jid]['id'];
-				
-				for notify in notifications:
-					if int(notify[0]) == nId:
-						n.id = nId
-						break
-				
-				if n.id != nId:
-					del self.notifications[jid]
-			
-				
+			n.setAction(action);			
+
 			if(n.publish()):
 				nId = n.id;
-				self.saveNotification(jid,{"id":nId,"callback":callback});
+				self.saveNotification(jid,{"id":nId,"callback":callback,"count":count});
 		
-		
-			if self.vibra and vibration:
-				self.vibra.start()
 			
 			
 	

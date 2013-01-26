@@ -40,7 +40,7 @@ Item {
             smooth: true
             fillMode: Image.PreserveAspectCrop
 			cache: false
-            source: imgsource //imgsource.indexOf("@")>-1 ? "" : imgsource
+            source: imgsource.indexOf("qml")>=-1 ? imgsource : imgsource + "?ran=" + Math.random() // hacking cache and stupid source set to qml on load conversations
 			onStatusChanged: {
                 if (image1.status==Image.Ready) istate="Loaded!";
 				if (image1.status==Image.Error) istate=imgsource;

@@ -115,7 +115,7 @@ INSTALLS += translation
 #INSTALLS += notificationiconx
 
 
-notificationconf.files = wazapp.message.new.conf
+notificationconf.files = wazapp.message.new.conf wazapp.message.chat.conf
 notificationconf.path = /usr/share/meegotouch/notifications/eventtypes
 
 INSTALLS += notificationconf

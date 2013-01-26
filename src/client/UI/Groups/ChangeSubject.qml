@@ -90,10 +90,9 @@ WAPage {
 				color: "transparent"
 				clip: true
 								
-				Button
+				WAButton
 				{
 					id:emoji_button
-					//platformStyle: ButtonStyle { inverted: true }
 					width:50
 					height:50
                     iconSource: "../common/images/emoji/32/E415.png"
@@ -106,10 +105,9 @@ WAPage {
 				}
 
 			
-				Button
+				WAButton
 				{
 					id:send_button
-					platformStyle: ButtonStyle { inverted: true }
 					width:160
 					height:50
 					text: qsTr("Done")

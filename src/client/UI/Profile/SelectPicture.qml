@@ -29,7 +29,7 @@ import "../common"
 
 WAPage {
     id:container
-
+    property bool noneButtonActive: false
     signal selected(string path)
 
     tools: ToolBarLayout {
@@ -37,6 +37,17 @@ WAPage {
         ToolIcon {
             platformIconId: "toolbar-back"
             onClicked: pageStack.pop()
+        }
+        ToolButton
+        {
+           anchors.centerIn: parent
+           visible: noneButtonActive
+           width: 300
+           text: qsTr("No background")
+           onClicked: { 
+             setBackground("none")
+             pageStack.pop()
+           }
         }
     }
 

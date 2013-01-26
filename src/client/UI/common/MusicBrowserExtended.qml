@@ -7,7 +7,7 @@ WAPage {
 
     Component.onCompleted: {
         dialogOpened = false
-		appWindow.browseFiles("/home/user/MyDocs", "mp3, MP3, wav, WAV");
+		appWindow.browseFiles("/home/user/MyDocs", "mp3, MP3, wav, WAV, aac, AAC, amr, AMR");
     }
 
     signal valueChosen(string value)
@@ -127,7 +127,7 @@ WAPage {
 				onClicked:{
 					stopSoundFile()
 					if (model.filetype=="folder") {
-						appWindow.browseFiles(model.filepath, "mp3, MP3, wav, WAV");
+						appWindow.browseFiles(model.filepath, "mp3, MP3, wav, WAV, aac, AAC, amr, AMR");
 					} else {
 						currentSelected = index
 						playSoundFile(model.filepath)
@@ -159,7 +159,7 @@ WAPage {
 				stopSoundFile()
 				var i = currentBrowserFolder.lastIndexOf("/");
 				var f = currentBrowserFolder.slice(0,i)
-				appWindow.browseFiles(f, "mp3, MP3, wav, WAV");
+				appWindow.browseFiles(f, "mp3, MP3, wav, WAV, aac, AAC, amr, AMR");
 			}
         }
     }

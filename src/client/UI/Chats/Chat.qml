@@ -274,7 +274,7 @@ Rectangle{
  				}
                 Text {
                     id:last_msg
-                    text: lastMessage? (lastMessage.type==0 || lastMessage.type==1 ? Helpers.emojify2(lastMessage.content) : 
+                    text: lastMessage? (lastMessage.type==0 || lastMessage.type==1 ? Helpers.emojify2(lastMessage.content.replace(/&amp;/g, "&")) : 
                           (lastMessage.type==20 ? qsTr("%1 joined the group").arg(getAuthor(lastMessage.content)) :
                           (lastMessage.type==21 ? qsTr("%1 left the group").arg(getAuthor(lastMessage.content)) :
 						  (lastMessage.type==22 ? (lastMessage.author.jid==myAccount ?

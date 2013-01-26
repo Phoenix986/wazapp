@@ -63,7 +63,7 @@ WAPage {
                horizontalAlignment: Text.AlignHCenter
            }
 
-           Button{
+           WAButton{
                anchors.horizontalCenter: parent.horizontalCenter
                text:qsTr("Donate")
                onClicked: {

@@ -190,6 +190,6 @@ class WAManager():
 		gui.setMyAccount(account.jid);
 
 		self.gui = gui;
-		
+		self.gui.whatsapp.eventHandler.initialConnCheck()
 		self.gui.whatsapp.eventHandler.setMyAccount(account.jid)
 		

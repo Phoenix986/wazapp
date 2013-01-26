@@ -78,7 +78,7 @@ function addMessage(reverse,position,message)
     updateLastMessage();
 
     //conv_data.append({"msg_id":id,"message":message,"type":type, "timestamp":timestamp,"status":msg_status});
-    if (!reverse) {
+    if (!reverse && conv_items.atYEnd) {
 		consoleDebug("MOVING TO BOTTOM OF LIST")
 		conv_items.positionViewAtEnd()
 	}
