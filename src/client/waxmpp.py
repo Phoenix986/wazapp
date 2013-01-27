@@ -318,8 +318,8 @@ class WAEventHandler(QObject):
 
 
 		messages = WAXMPP.message_store.getUnsent();
-		#self._d("Resending %i old messages"%(len(messages)))
-		self._d("Skipping %i old messages"%(len(messages)))
+		self._d("Resending %i old messages"%(len(messages)))
+		'''self._d("Skipping %i old messages"%(len(messages)))
 		for m in messages:
 			m.status = 1
 			m.save()
@@ -363,7 +363,7 @@ class WAEventHandler(QObject):
 				except:
 					self._d("skipped sending an old message because of i don't know why!")
 
-		self._d("Resending old messages done")'''
+		self._d("Resending old messages done")
 
 	def getDisplayPicture(self, jid = None):
 		picture = "/opt/waxmppplugin/bin/wazapp/UI/common/images/user.png"
