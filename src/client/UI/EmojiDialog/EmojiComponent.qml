@@ -193,8 +193,8 @@ Rectangle {
 	    
 	    onSelected: {
 		selectEmoji(code)
-		if (showRecent)
-		    emojiList.loadEmoji()
+		//if (showRecent)
+		//    emojiList.loadEmoji()
 	    }
 	}
 	
